@@ -1173,6 +1173,11 @@ select:
       data: "SRC,06?"
 
 button:
+
+  - platform: restart
+    name: "Reboot ESP32"
+    id: reboot_button
+
   - platform: template
     name: "System Off"
     id: elan_system_off
