@@ -929,6 +929,50 @@ switch:
     command_update:
       data: "LUD,06?"
 
+  - platform: uartex
+    name: "Zone 1 Do Not Disturb"
+    id: elan_zone1_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,01,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,01,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,01,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,01?"
+
+  - platform: uartex
+    name: "Zone 2 Do Not Disturb"
+    id: elan_zone2_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,02,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,02,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,02,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,02?"
+
 select:
   - platform: uartex
     name: "Zone 1 Source"
