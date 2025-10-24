@@ -973,7 +973,7 @@ switch:
     command_update:
       data: "DND,02?"
 
-- platform: uartex
+  - platform: uartex
     name: "Zone 3 Do Not Disturb"
     id: elan_zone3_dnd
     entity_category: config
