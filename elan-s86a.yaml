@@ -8,10 +8,6 @@ substitutions:
   status_led: GPIO19
   rx_led: GPIO5
   tx_led: GPIO18
-  # I2S Audio pins for MAX98357A
-  i2s_lrclk: GPIO14 # LRC Pin of the Max98357 
-  i2s_bclk: GPIO27  # BCLK Pin of the Max98357
-  spk: GPIO26 # DIN Pin of the Max98357
 
   # Source names - customize these for your setup
   source_1: "Source 1"
@@ -39,7 +35,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
 wifi:
   ssid: !secret wifi_ssid
@@ -1473,28 +1469,6 @@ interval:
           id: elan_uartex
           data: "ASD,01?"
 
-i2s_audio:
-  - id: i2s_in
-    i2s_lrclk_pin: ${i2s_lrclk} # LRC Pin of the Max98357 
-    i2s_bclk_pin: ${i2s_bclk} # BCLK Pin of the Max98357
-
-media_player:
-  - platform: i2s_audio
-    name: "esp_speaker"
-    id: media_player_speaker
-    i2s_audio_id: i2s_in
-    dac_type: external
-    i2s_dout_pin: ${spk}   #  DIN Pin of the MAX98357A Audio Amplifier
-    mode: mono
-    on_play:
-      - logger.log: "Media playing!"
-      - output.turn_off: mute_output
-      - media_player.volume_set:
-          id: media_player_speaker 
-          volume: 100% 
-    on_idle:
-      - output.turn_on: mute_output
-
 # Output pins for LEDs with PWM for brightness control
 output:
   - platform: ledc
@@ -1506,15 +1480,6 @@ output:
     pin: ${tx_led}
     id: tx_led_output
     inverted: false
-
-  # Optional: SD pin control for MAX98357A (connect to GPIO33 or desired pin)
-  # The SD pin can be used to control shutdown/channel selection
-  # Leave floating or pull to VDD/2 for mixed mono output
-  # Connect to GND for shutdown mode
-  - platform: gpio
-    pin: GPIO33
-    id: mute_output
-    inverted: true
 
 # Status LED
 status_led:
