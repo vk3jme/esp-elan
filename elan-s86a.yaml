@@ -9,15 +9,9 @@ substitutions:
   rx_led: GPIO5
   tx_led: GPIO18
   # I2S Audio pins for MAX98357A
-#  i2s_dout: GPIO26
-#  i2s_bclk: GPIO27
-#  i2s_lrc: GPIO14
-
   i2s_lrclk: GPIO14 # LRC Pin of the Max98357 
   i2s_bclk: GPIO27  # BCLK Pin of the Max98357
   spk: GPIO26 # DIN Pin of the Max98357
-
-
 
   # Source names - customize these for your setup
   source_1: "Source 1"
@@ -1342,47 +1336,10 @@ interval:
           id: elan_uartex
           data: "ASD,01?"
 
-# I2S Audio configuration for MAX98357A external DAC
-# Pin configuration matches Lonely Binary ESP32 I2S Audio Shield
-#i2s_audio:
-#  i2s_lrclk_pin: ${i2s_lrc}  # LRC (Word Select/Left-Right Clock) - GPIO14
-#  i2s_bclk_pin: ${i2s_bclk}   # BCLK (Bit Clock) - GPIO27
-
-# Media player using external MAX98357A DAC
-#media_player:
-#  - platform: i2s_audio
-#    name: "ESP32 Audio Output"
-#    id: esp32_media_player
-#    dac_type: external
-#    i2s_dout_pin: ${i2s_dout}   # DOUT (Data Out to MAX98357A) - GPIO26
-#    i2s_audio_id: i2s_audio
-#    mode: stereo
-#
-#    on_idle:
-#      - output.turn_on: mute_output
-#    on_play:
-#      - output.turn_off: mute_output
-
 i2s_audio:
-#  - id: i2s_out
-#    i2s_lrclk_pin: ${i2s_lrc} 
-#    i2s_bclk_pin: ${i2s_bclk}
-
-
   - id: i2s_in
     i2s_lrclk_pin: ${i2s_lrclk} # LRC Pin of the Max98357 
     i2s_bclk_pin: ${i2s_bclk} # BCLK Pin of the Max98357
-
-
-# LR to be grounded
-
-#media_player:
-#  - platform: i2s_audio
-#    name: ESPHome I2S Media Player
-#    dac_type: external
-#    i2s_audio_id: i2s_out
-#    i2s_dout_pin: ${i2s_dout}
-#    mode: stereo
 
 media_player:
   - platform: i2s_audio
@@ -1400,10 +1357,6 @@ media_player:
           volume: 100% 
     on_idle:
       - output.turn_on: mute_output
-    
-
-
-
 
 # Output pins for LEDs with PWM for brightness control
 output:
