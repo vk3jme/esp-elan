@@ -1,0 +1,1433 @@
+substitutions:
+  device_name: elan-s86
+  friendly_name: "Elan S86"
+  device_description: "Elan Multizone Amplifier"
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  # LED pins
+  status_led: GPIO19
+  rx_led: GPIO5
+  tx_led: GPIO18
+  # I2S Audio pins for MAX98357A
+#  i2s_dout: GPIO26
+#  i2s_bclk: GPIO27
+#  i2s_lrc: GPIO14
+
+  i2s_lrclk: GPIO14 # LRC Pin of the Max98357 
+  i2s_bclk: GPIO27  # BCLK Pin of the Max98357
+  spk: GPIO26 # DIN Pin of the Max98357
+
+
+
+  # Source names - customize these for your setup
+  source_1: "Source 1"
+  source_2: "Source 2"
+  source_3: "Source 3"
+  source_4: "Source 4"
+  source_5: "Source 5"
+  source_6: "Source 6"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: ${device_description}
+  on_boot:
+    priority: -100
+    then:
+      # Turn off RX and TX LEDs on boot
+      - output.set_level:
+          id: rx_led_output
+          level: 0%
+      - output.set_level:
+          id: tx_led_output
+          level: 0%
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: "12345678"
+
+captive_portal:
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+api:
+
+ota:
+  platform: esphome
+
+uart:
+  id: elan_uart
+  tx_pin: ${tx_pin}
+  rx_pin: ${rx_pin}
+  baud_rate: 19200
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+  debug:
+    direction: BOTH
+    dummy_receiver: false
+    after:
+      delimiter: [0x0D]
+    sequence:
+      - lambda: |-
+          UARTDebug::log_string(direction, bytes);
+          // Flash appropriate LED based on direction at 70% brightness
+          if (direction == UART_DIRECTION_RX) {
+            id(rx_led_output).set_level(0.70);
+            id(rx_led_timer).execute();
+          } else if (direction == UART_DIRECTION_TX) {
+            id(tx_led_output).set_level(0.70);
+            id(tx_led_timer).execute();
+          }
+
+external_components:
+  - source: github://eigger/espcomponents@latest
+    components: [uartex]
+    refresh: always
+
+uartex:
+  id: elan_uartex
+  uart_id: elan_uart
+  rx_timeout: 10ms
+  tx_delay: 50ms
+  tx_timeout: 500ms
+  tx_retry_cnt: 3
+  tx_footer: [0x0D]
+  rx_footer: [0x0D]
+  rx_header: [0x26, 0x53, 0x38, 0x36, 0x2C]
+  tx_header: [0x26, 0x53, 0x38, 0x36, 0x2C]
+  log:
+    disabled: true
+
+# Binary sensors for audio signal detection
+binary_sensor:
+  - platform: uartex
+    name: "Source 1 Audio Signal"
+    id: source1_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+
+  - platform: uartex
+    name: "Source 2 Audio Signal"
+    id: source2_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 8
+      data: "1"
+    state_off:
+      offset: 8
+      data: "0"
+
+  - platform: uartex
+    name: "Source 3 Audio Signal"
+    id: source3_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 9
+      data: "1"
+    state_off:
+      offset: 9
+      data: "0"
+
+  - platform: uartex
+    name: "Source 4 Audio Signal"
+    id: source4_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 10
+      data: "1"
+    state_off:
+      offset: 10
+      data: "0"
+
+  - platform: uartex
+    name: "Source 5 Audio Signal"
+    id: source5_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 11
+      data: "1"
+    state_off:
+      offset: 11
+      data: "0"
+
+  - platform: uartex
+    name: "Source 6 Audio Signal"
+    id: source6_audio_signal
+    device_class: sound
+    state:
+      data: "ASD,01,"
+    state_on:
+      offset: 12
+      data: "1"
+    state_off:
+      offset: 12
+      data: "0"
+
+number:
+  - platform: uartex
+    name: "Zone 1 Volume"
+    id: elan_zone1_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,01,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,01,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,01?"
+
+  - platform: uartex
+    name: "Zone 2 Volume"
+    id: elan_zone2_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,02,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,02,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,02?"
+
+  - platform: uartex
+    name: "Zone 3 Volume"
+    id: elan_zone3_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,03,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,03,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,03?"
+
+  - platform: uartex
+    name: "Zone 4 Volume"
+    id: elan_zone4_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,04,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,04,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,04?"
+
+  - platform: uartex
+    name: "Zone 1 Bass"
+    id: elan_zone1_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,01,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,01,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,01?"
+
+  - platform: uartex
+    name: "Zone 1 Treble"
+    id: elan_zone1_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,01,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,01,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,01?"
+
+  - platform: uartex
+    name: "Zone 2 Bass"
+    id: elan_zone2_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,02,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,02,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,02?"
+
+  - platform: uartex
+    name: "Zone 2 Treble"
+    id: elan_zone2_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,02,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,02,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,02?"
+
+  - platform: uartex
+    name: "Zone 3 Bass"
+    id: elan_zone3_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,03,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,03,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,03?"
+
+  - platform: uartex
+    name: "Zone 3 Treble"
+    id: elan_zone3_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,03,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,03,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,03?"
+
+  - platform: uartex
+    name: "Zone 4 Bass"
+    id: elan_zone4_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,04,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,04,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,04?"
+
+  - platform: uartex
+    name: "Zone 4 Treble"
+    id: elan_zone4_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,04,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,04,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,04?"
+
+  - platform: uartex
+    name: "Zone 5 Volume"
+    id: elan_zone5_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,05,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,05,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,05?"
+
+  - platform: uartex
+    name: "Zone 5 Bass"
+    id: elan_zone5_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,05,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,05,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,05?"
+
+  - platform: uartex
+    name: "Zone 5 Treble"
+    id: elan_zone5_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,05,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,05,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,05?"
+
+  - platform: uartex
+    name: "Zone 6 Volume"
+    id: elan_zone6_volume
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    state:
+      data: "VOL,06,"
+    state_number:
+      offset: 7
+      length: 3
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      sprintf(buf, "&S86,VOL,06,%d\r", (int)x);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "VOL,06?"
+
+  - platform: uartex
+    name: "Zone 6 Bass"
+    id: elan_zone6_bass
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "BAS,06,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,BAS,06,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "BAS,06?"
+
+  - platform: uartex
+    name: "Zone 6 Treble"
+    id: elan_zone6_treble
+    min_value: -6
+    max_value: 6
+    step: 2
+    unit_of_measurement: "dB"
+    restore_value: true
+    state:
+      data: "TRE,06,"
+    state_number:
+      offset: 7
+      length: 2
+      precision: 0
+      decode: ascii
+    command_number: !lambda |-
+      char buf[32];
+      char sign = (x >= 0) ? '+' : '-';
+      int steps = abs((int)x) / 2;
+      sprintf(buf, "&S86,TRE,06,%c%d\r", sign, steps);
+      std::vector<uint8_t> cmd;
+      for (char *p = buf; *p; p++) {
+        cmd.push_back((uint8_t)*p);
+      }
+      return cmd;
+    command_update:
+      data: "TRE,06?"
+
+switch:
+  - platform: uartex
+    name: "Zone 1 Power"
+    id: elan_zone1_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,01,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,01,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,01,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,01?"
+
+  - platform: uartex
+    name: "Zone 2 Power"
+    id: elan_zone2_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,02,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,02,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,02,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,02?"
+
+  - platform: uartex
+    name: "Zone 3 Power"
+    id: elan_zone3_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,03,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,03,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,03,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,03?"
+
+  - platform: uartex
+    name: "Zone 4 Power"
+    id: elan_zone4_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,04,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,04,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,04,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,04?"
+
+  - platform: uartex
+    name: "Zone 5 Power"
+    id: elan_zone5_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,05,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,05,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,05,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,05?"
+
+  - platform: uartex
+    name: "Zone 6 Power"
+    id: elan_zone6_power
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "PWR,06,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "PWR,06,1"
+      ack: "ACK"
+    command_off:
+      data: "PWR,06,0"
+      ack: "ACK"
+    command_update:
+      data: "PWR,06?"
+
+  - platform: uartex
+    name: "Zone 1 Loudness"
+    id: elan_zone1_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,01,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,01,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,01,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,01?"
+
+  - platform: uartex
+    name: "Zone 2 Loudness"
+    id: elan_zone2_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,02,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,02,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,02,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,02?"
+
+  - platform: uartex
+    name: "Zone 3 Loudness"
+    id: elan_zone3_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,03,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,03,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,03,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,03?"
+
+  - platform: uartex
+    name: "Zone 4 Loudness"
+    id: elan_zone4_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,04,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,04,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,04,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,04?"
+
+  - platform: uartex
+    name: "Zone 5 Loudness"
+    id: elan_zone5_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,05,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,05,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,05,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,05?"
+
+  - platform: uartex
+    name: "Zone 6 Loudness"
+    id: elan_zone6_loudness
+    restore_mode: RESTORE_DEFAULT_OFF
+    state:
+      data: "LUD,06,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "LUD,06,1"
+      ack: "ACK"
+    command_off:
+      data: "LUD,06,0"
+      ack: "ACK"
+    command_update:
+      data: "LUD,06?"
+
+select:
+  - platform: uartex
+    name: "Zone 1 Source"
+    id: elan_zone1_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,01,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,01,01"};
+      if (str == "${source_2}") return {"SRC,01,02"};
+      if (str == "${source_3}") return {"SRC,01,03"};
+      if (str == "${source_4}") return {"SRC,01,04"};
+      if (str == "${source_5}") return {"SRC,01,05"};
+      if (str == "${source_6}") return {"SRC,01,06"};
+      return {};
+    command_update:
+      data: "SRC,01?"
+
+  - platform: uartex
+    name: "Zone 2 Source"
+    id: elan_zone2_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,02,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,02,01"};
+      if (str == "${source_2}") return {"SRC,02,02"};
+      if (str == "${source_3}") return {"SRC,02,03"};
+      if (str == "${source_4}") return {"SRC,02,04"};
+      if (str == "${source_5}") return {"SRC,02,05"};
+      if (str == "${source_6}") return {"SRC,02,06"};
+      return {};
+    command_update:
+      data: "SRC,02?"
+
+  - platform: uartex
+    name: "Zone 3 Source"
+    id: elan_zone3_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,03,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,03,01"};
+      if (str == "${source_2}") return {"SRC,03,02"};
+      if (str == "${source_3}") return {"SRC,03,03"};
+      if (str == "${source_4}") return {"SRC,03,04"};
+      if (str == "${source_5}") return {"SRC,03,05"};
+      if (str == "${source_6}") return {"SRC,03,06"};
+      return {};
+    command_update:
+      data: "SRC,03?"
+
+  - platform: uartex
+    name: "Zone 4 Source"
+    id: elan_zone4_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,04,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,04,01"};
+      if (str == "${source_2}") return {"SRC,04,02"};
+      if (str == "${source_3}") return {"SRC,04,03"};
+      if (str == "${source_4}") return {"SRC,04,04"};
+      if (str == "${source_5}") return {"SRC,04,05"};
+      if (str == "${source_6}") return {"SRC,04,06"};
+      return {};
+    command_update:
+      data: "SRC,04?"
+
+  - platform: uartex
+    name: "Zone 5 Source"
+    id: elan_zone5_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,05,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,05,01"};
+      if (str == "${source_2}") return {"SRC,05,02"};
+      if (str == "${source_3}") return {"SRC,05,03"};
+      if (str == "${source_4}") return {"SRC,05,04"};
+      if (str == "${source_5}") return {"SRC,05,05"};
+      if (str == "${source_6}") return {"SRC,05,06"};
+      return {};
+    command_update:
+      data: "SRC,05?"
+
+  - platform: uartex
+    name: "Zone 6 Source"
+    id: elan_zone6_source
+    icon: mdi:volume-source
+    restore_value: true
+    options:
+      - ${source_1}
+      - ${source_2}
+      - ${source_3}
+      - ${source_4}
+      - ${source_5}
+      - ${source_6}
+    state:
+      data: "SRC,06,"
+    state_select: !lambda |-
+      if (check_value(7, '1', data, len)) return "${source_1}";
+      if (check_value(7, '2', data, len)) return "${source_2}";
+      if (check_value(7, '3', data, len)) return "${source_3}";
+      if (check_value(7, '4', data, len)) return "${source_4}";
+      if (check_value(7, '5', data, len)) return "${source_5}";
+      if (check_value(7, '6', data, len)) return "${source_6}";
+      return "";
+    command_select: !lambda |-
+      if (str == "${source_1}") return {"SRC,06,01"};
+      if (str == "${source_2}") return {"SRC,06,02"};
+      if (str == "${source_3}") return {"SRC,06,03"};
+      if (str == "${source_4}") return {"SRC,06,04"};
+      if (str == "${source_5}") return {"SRC,06,05"};
+      if (str == "${source_6}") return {"SRC,06,06"};
+      return {};
+    command_update:
+      data: "SRC,06?"
+
+button:
+  - platform: template
+    name: "System Off"
+    id: elan_system_off
+    on_press:
+      - uartex.write:
+          id: elan_uartex
+          data: "SYSOFF"
+
+  - platform: template
+    name: "Zone 1 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone1
+
+  - platform: template
+    name: "Zone 1 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone1
+
+  - platform: template
+    name: "Zone 2 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone2
+
+  - platform: template
+    name: "Zone 2 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone2
+
+  - platform: template
+    name: "Zone 3 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone3
+
+  - platform: template
+    name: "Zone 3 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone3
+
+  - platform: template
+    name: "Zone 4 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone4
+
+  - platform: template
+    name: "Zone 4 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone4
+
+  - platform: template
+    name: "Zone 5 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone5
+
+  - platform: template
+    name: "Zone 5 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone5
+
+  - platform: template
+    name: "Zone 6 Volume Up"
+    icon: mdi:volume-plus
+    on_press:
+      - script.execute: volume_up_zone6
+
+  - platform: template
+    name: "Zone 6 Volume Down"
+    icon: mdi:volume-minus
+    on_press:
+      - script.execute: volume_down_zone6
+
+  - platform: template
+    name: "Query Audio Signals"
+    id: query_audio_signals
+    on_press:
+      - uartex.write:
+          id: elan_uartex
+          data: "ASD,01?"
+
+script:
+  - id: volume_up_zone1
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone1_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone1_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone1
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone1_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone1_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: volume_up_zone2
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone2_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone2_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone2
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone2_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone2_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: volume_up_zone3
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone3_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone3_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone3
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone3_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone3_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: volume_up_zone4
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone4_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone4_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone4
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone4_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone4_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: volume_up_zone5
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone5_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone5_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone5
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone5_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone5_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: volume_up_zone6
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone6_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone6_volume).make_call().set_value(current_vol + 5).perform();
+          }
+
+  - id: volume_down_zone6
+    then:
+      - lambda: |-
+          float current_vol = id(elan_zone6_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone6_volume).make_call().set_value(current_vol - 5).perform();
+          }
+
+  - id: rx_led_timer
+    then:
+      - delay: 50ms
+      - output.set_level:
+          id: rx_led_output
+          level: 0%
+
+  - id: tx_led_timer
+    then:
+      - delay: 50ms
+      - output.set_level:
+          id: tx_led_output
+          level: 0%
+
+# Automatic audio signal detection polling
+interval:
+  - interval: 30s
+    then:
+      - uartex.write:
+          id: elan_uartex
+          data: "ASD,01?"
+
+# I2S Audio configuration for MAX98357A external DAC
+# Pin configuration matches Lonely Binary ESP32 I2S Audio Shield
+#i2s_audio:
+#  i2s_lrclk_pin: ${i2s_lrc}  # LRC (Word Select/Left-Right Clock) - GPIO14
+#  i2s_bclk_pin: ${i2s_bclk}   # BCLK (Bit Clock) - GPIO27
+
+# Media player using external MAX98357A DAC
+#media_player:
+#  - platform: i2s_audio
+#    name: "ESP32 Audio Output"
+#    id: esp32_media_player
+#    dac_type: external
+#    i2s_dout_pin: ${i2s_dout}   # DOUT (Data Out to MAX98357A) - GPIO26
+#    i2s_audio_id: i2s_audio
+#    mode: stereo
+#
+#    on_idle:
+#      - output.turn_on: mute_output
+#    on_play:
+#      - output.turn_off: mute_output
+
+i2s_audio:
+#  - id: i2s_out
+#    i2s_lrclk_pin: ${i2s_lrc} 
+#    i2s_bclk_pin: ${i2s_bclk}
+
+
+  - id: i2s_in
+    i2s_lrclk_pin: ${i2s_lrclk} # LRC Pin of the Max98357 
+    i2s_bclk_pin: ${i2s_bclk} # BCLK Pin of the Max98357
+
+
+# LR to be grounded
+
+#media_player:
+#  - platform: i2s_audio
+#    name: ESPHome I2S Media Player
+#    dac_type: external
+#    i2s_audio_id: i2s_out
+#    i2s_dout_pin: ${i2s_dout}
+#    mode: stereo
+
+media_player:
+  - platform: i2s_audio
+    name: "esp_speaker"
+    id: media_player_speaker
+    i2s_audio_id: i2s_in
+    dac_type: external
+    i2s_dout_pin: ${spk}   #  DIN Pin of the MAX98357A Audio Amplifier
+    mode: mono
+    on_play:
+      - logger.log: "Media playing!"
+      - output.turn_off: mute_output
+      - media_player.volume_set:
+          id: media_player_speaker 
+          volume: 100% 
+    on_idle:
+      - output.turn_on: mute_output
+    
+
+
+
+
+# Output pins for LEDs with PWM for brightness control
+output:
+  - platform: ledc
+    pin: ${rx_led}
+    id: rx_led_output
+    inverted: false
+
+  - platform: ledc
+    pin: ${tx_led}
+    id: tx_led_output
+    inverted: false
+
+  # Optional: SD pin control for MAX98357A (connect to GPIO33 or desired pin)
+  # The SD pin can be used to control shutdown/channel selection
+  # Leave floating or pull to VDD/2 for mixed mono output
+  # Connect to GND for shutdown mode
+  - platform: gpio
+    pin: GPIO33
+    id: mute_output
+    inverted: true
+
+# Status LED
+status_led:
+  pin:
+    number: ${status_led}
+    inverted: false
