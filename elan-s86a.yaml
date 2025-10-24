@@ -973,6 +973,94 @@ switch:
     command_update:
       data: "DND,02?"
 
+- platform: uartex
+    name: "Zone 3 Do Not Disturb"
+    id: elan_zone3_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,03,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,03,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,03,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,03?"
+
+  - platform: uartex
+    name: "Zone 4 Do Not Disturb"
+    id: elan_zone4_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,04,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,04,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,04,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,04?"
+
+  - platform: uartex
+    name: "Zone 5 Do Not Disturb"
+    id: elan_zone5_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,05,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,05,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,05,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,05?"
+
+  - platform: uartex
+    name: "Zone 6 Do Not Disturb"
+    id: elan_zone6_dnd
+    entity_category: config
+    restore_mode: DISABLED
+    state:
+      data: "DND,06,"
+    state_on:
+      offset: 7
+      data: "1"
+    state_off:
+      offset: 7
+      data: "0"
+    command_on:
+      data: "DND,06,1"
+      ack: "ACK"
+    command_off:
+      data: "DND,06,0"
+      ack: "ACK"
+    command_update:
+      data: "DND,06?"
+      
 select:
   - platform: uartex
     name: "Zone 1 Source"
