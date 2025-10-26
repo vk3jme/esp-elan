@@ -1280,73 +1280,121 @@ button:
     name: "Zone 1 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone1
+      - lambda: |-
+          float current_vol = id(elan_zone1_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone1_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 1 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone1
+      - lambda: |-
+          float current_vol = id(elan_zone1_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone1_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Zone 2 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone2
+      - lambda: |-
+          float current_vol = id(elan_zone2_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone2_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 2 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone2
+      - lambda: |-
+          float current_vol = id(elan_zone2_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone2_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Zone 3 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone3
+      - lambda: |-
+          float current_vol = id(elan_zone3_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone3_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 3 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone3
+      - lambda: |-
+          float current_vol = id(elan_zone3_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone3_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Zone 4 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone4
+      - lambda: |-
+          float current_vol = id(elan_zone4_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone4_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 4 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone4
+      - lambda: |-
+          float current_vol = id(elan_zone4_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone4_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Zone 5 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone5
+      - lambda: |-
+          float current_vol = id(elan_zone5_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone5_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 5 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone5
+      - lambda: |-
+          float current_vol = id(elan_zone5_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone5_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Zone 6 Volume Up"
     icon: mdi:volume-plus
     on_press:
-      - script.execute: volume_up_zone6
+      - lambda: |-
+          float current_vol = id(elan_zone6_volume).state;
+          if (current_vol < 100) {
+            id(elan_zone6_volume).make_call().set_value(current_vol + 5).perform();
+          }
 
   - platform: template
     name: "Zone 6 Volume Down"
     icon: mdi:volume-minus
     on_press:
-      - script.execute: volume_down_zone6
+      - lambda: |-
+          float current_vol = id(elan_zone6_volume).state;
+          if (current_vol > 0) {
+            id(elan_zone6_volume).make_call().set_value(current_vol - 5).perform();
+          }
 
   - platform: template
     name: "Query Audio Signals"
@@ -1357,101 +1405,6 @@ button:
           data: "ASD,01?"
 
 script:
-  - id: volume_up_zone1
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone1_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone1_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone1
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone1_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone1_volume).make_call().set_value(current_vol - 5).perform();
-          }
-
-  - id: volume_up_zone2
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone2_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone2_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone2
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone2_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone2_volume).make_call().set_value(current_vol - 5).perform();
-          }
-
-  - id: volume_up_zone3
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone3_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone3_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone3
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone3_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone3_volume).make_call().set_value(current_vol - 5).perform();
-          }
-
-  - id: volume_up_zone4
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone4_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone4_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone4
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone4_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone4_volume).make_call().set_value(current_vol - 5).perform();
-          }
-
-  - id: volume_up_zone5
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone5_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone5_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone5
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone5_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone5_volume).make_call().set_value(current_vol - 5).perform();
-          }
-
-  - id: volume_up_zone6
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone6_volume).state;
-          if (current_vol < 100) {
-            id(elan_zone6_volume).make_call().set_value(current_vol + 5).perform();
-          }
-
-  - id: volume_down_zone6
-    then:
-      - lambda: |-
-          float current_vol = id(elan_zone6_volume).state;
-          if (current_vol > 0) {
-            id(elan_zone6_volume).make_call().set_value(current_vol - 5).perform();
-          }
 
   - id: rx_led_timer
     then:
