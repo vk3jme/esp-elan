@@ -931,13 +931,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,01,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]  # Mask byte B (offset 11)
     state_on:
-      offset: 7
-      data: "1"
+      offset: 11  # Position of byte B for Zone 1
+      data: [0x20]  # Bit 'c' is set (DND ON)
     state_off:
-      offset: 7
-      data: "0"
+      offset: 11
+      data: [0x00]  # Bit 'c' is clear (DND OFF)
     command_on:
       data: "DND,01,1"
       ack: "ACK"
@@ -945,7 +946,7 @@ switch:
       data: "DND,01,0"
       ack: "ACK"
     command_update:
-      data: "DND,01?"
+      data: "QRY,01?"
 
   - platform: uartex
     name: "Zone 2 Do Not Disturb"
@@ -953,13 +954,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,02,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]
     state_on:
-      offset: 7
-      data: "1"
+      offset: 17  # Position of byte B for Zone 2
+      data: [0x20]
     state_off:
-      offset: 7
-      data: "0"
+      offset: 17
+      data: [0x00]
     command_on:
       data: "DND,02,1"
       ack: "ACK"
@@ -967,7 +969,7 @@ switch:
       data: "DND,02,0"
       ack: "ACK"
     command_update:
-      data: "DND,02?"
+      data: "QRY,01?"
 
   - platform: uartex
     name: "Zone 3 Do Not Disturb"
@@ -975,13 +977,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,03,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]
     state_on:
-      offset: 7
-      data: "1"
+      offset: 23  # Position of byte B for Zone 3
+      data: [0x20]
     state_off:
-      offset: 7
-      data: "0"
+      offset: 23
+      data: [0x00]
     command_on:
       data: "DND,03,1"
       ack: "ACK"
@@ -989,7 +992,7 @@ switch:
       data: "DND,03,0"
       ack: "ACK"
     command_update:
-      data: "DND,03?"
+      data: "QRY,01?"
 
   - platform: uartex
     name: "Zone 4 Do Not Disturb"
@@ -997,13 +1000,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,04,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]
     state_on:
-      offset: 7
-      data: "1"
+      offset: 29  # Position of byte B for Zone 4
+      data: [0x20]
     state_off:
-      offset: 7
-      data: "0"
+      offset: 29
+      data: [0x00]
     command_on:
       data: "DND,04,1"
       ack: "ACK"
@@ -1011,7 +1015,7 @@ switch:
       data: "DND,04,0"
       ack: "ACK"
     command_update:
-      data: "DND,04?"
+      data: "QRY,01?"
 
   - platform: uartex
     name: "Zone 5 Do Not Disturb"
@@ -1019,13 +1023,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,05,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]
     state_on:
-      offset: 7
-      data: "1"
+      offset: 35  # Position of byte B for Zone 5
+      data: [0x20]
     state_off:
-      offset: 7
-      data: "0"
+      offset: 35
+      data: [0x00]
     command_on:
       data: "DND,05,1"
       ack: "ACK"
@@ -1033,7 +1038,7 @@ switch:
       data: "DND,05,0"
       ack: "ACK"
     command_update:
-      data: "DND,05?"
+      data: "QRY,01?"
 
   - platform: uartex
     name: "Zone 6 Do Not Disturb"
@@ -1041,13 +1046,14 @@ switch:
     entity_category: config
     restore_mode: DISABLED
     state:
-      data: "DND,06,"
+      data: "QRY,01,"
+      mask: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20]
     state_on:
-      offset: 7
-      data: "1"
+      offset: 41  # Position of byte B for Zone 6
+      data: [0x20]
     state_off:
-      offset: 7
-      data: "0"
+      offset: 41
+      data: [0x00]
     command_on:
       data: "DND,06,1"
       ack: "ACK"
@@ -1055,8 +1061,8 @@ switch:
       data: "DND,06,0"
       ack: "ACK"
     command_update:
-      data: "DND,06?"
-      
+      data: "QRY,01?"
+
 select:
   - platform: uartex
     name: "Zone 1 Source"
